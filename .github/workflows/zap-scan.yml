@@ -1,0 +1,33 @@
+name: OWASP ZAP Scan
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '0 3 * * *' # Ejecuta diariamente a las 03:00 UTC
+
+jobs:
+  zap_scan:
+    runs-on: ubuntu-latest
+    steps:
+      - name: ZAP Scan
+        uses: zaproxy/action-full-scan@v0.10.0
+        with:
+          target: 'https://juice-shop.herokuapp.com'
+
+      - name: Publicar resumen en Markdown
+        run: |
+          echo "## OWASP ZAP Scan Results" > zap-summary.md
+          if [ -f report_html.html ]; then
+            echo "El reporte HTML está disponible como artefacto." >> zap-summary.md
+          fi
+          if [ -f report_md.md ]; then
+            cat report_md.md >> zap-summary.md
+          fi
+
+      - name: Subir artefactos del escaneo
+        uses: actions/upload-artifact@v4
+        with:
+          name: zap-report
+          path: |
+            report_html.html
+            zap-summary.md
