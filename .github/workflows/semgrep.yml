@@ -1,0 +1,47 @@
+name: Semgrep Code Scan
+
+on:
+  pull_request:
+    branches: [ master ]
+  push:
+    branches: [ master ]
+
+jobs:
+  semgrep:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.x'
+
+      - name: Install Semgrep
+        run: pip install semgrep
+
+      - name: Run Semgrep
+        run: semgrep --config=auto --json > semgrep-results.json
+
+      - name: Generate Markdown Summary
+        run: |
+          echo "## Semgrep Scan Results" > semgrep-summary.md
+          if [ -s semgrep-results.json ]; then
+            jq -r '
+              .results[] | "- Rule: " + .check_id + "\n  Message: " + .extra.message + "\n  File: " + .path + ":" + (.start.line|tostring)
+            ' semgrep-results.json >> semgrep-summary.md
+          else
+            echo "No issues found." >> semgrep-summary.md
+          fi
+
+      - name: Upload summary as workflow artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: semgrep-summary
+          path: semgrep-summary.md
+
+      - name: Add summary to GitHub Actions
+        run: |
+          echo "### Semgrep Scan Results" >> $GITHUB_STEP_SUMMARY
+          cat semgrep-summary.md >> $GITHUB_STEP_SUMMARY
