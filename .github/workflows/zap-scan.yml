@@ -31,3 +31,7 @@ jobs:
           path: |
             report_html.html
             zap-summary.md
+        - name: Agregar reporte Markdown al summary
+          run: |
+            echo "### OWASP ZAP Scan Results" >> $GITHUB_STEP_SUMMARY
+            cat zap-summary.md >> $GITHUB_STEP_SUMMARY
